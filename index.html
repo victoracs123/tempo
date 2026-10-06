@@ -177,6 +177,24 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .sumtxt{font-size:17px;margin:18px 0 0;color:#2F373F}
 .sumshare{margin-top:18px;display:flex;gap:10px}
 .sumshare .btn{height:46px;background:var(--accent);color:#fff;border-bottom:4px solid var(--accent-edge)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.chip2{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:16px;padding:14px 16px}
+.chip2 svg{width:22px;height:22px;stroke:var(--accent);flex:none}
+.chip2 span{display:block;font-size:12px;color:var(--muted)}.chip2 b{font-size:16px}
+.pair{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;height:100%}
+.pair .bar{width:36%;max-width:18px}.bar.prev{background:#D5DAE0}.bar.cur{background:#F0A090}
+.legend2{display:flex;gap:18px;margin-top:10px;font-size:13px;color:var(--muted)}.legend2 i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.donut{display:flex;align-items:center;gap:26px;margin-top:20px;flex-wrap:wrap}
+.dring{position:relative;width:170px;height:170px;flex:none}.dring svg{width:100%;height:100%}
+.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.dc b{font-size:20px}.dc span{font-size:12px;color:var(--muted)}
+.dleg{flex:1;min-width:150px;display:flex;flex-direction:column;gap:10px}
+.dleg div{display:flex;align-items:center;gap:10px}.dleg span{flex:1}.dleg b{font-weight:700}
+.tbl{width:100%;border-collapse:collapse;margin-top:14px;font-size:15px}
+.tbl th{text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 8px;border-bottom:1px solid var(--border)}
+.tbl td{padding:14px 8px;border-bottom:1px solid var(--border)}.tbl tr:last-child td{border:0}
+.tbl .n{white-space:nowrap}.tbl td.up{color:#2E7D5B;font-weight:700}.tbl td.down{color:#B5452B;font-weight:700}
+.tbl .pc{min-width:110px}.tbl .pc .track.mini{height:8px;margin:0 0 4px}.tbl .pc span{font-size:13px;color:var(--muted)}.tbl .pc span.ok{color:#2E9D6B;font-weight:700}
+@media(max-width:860px){.chips{grid-template-columns:1fr 1fr}.tbl{font-size:13px}.tbl th,.tbl td{padding:10px 4px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}.dring{width:150px;height:150px}}
 @keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media(max-width:860px){.ghost{font-size:0;gap:0;padding:10px}.ghost svg{width:24px;height:24px;stroke:var(--accent)}.tab{padding:14px 8px}.grid,.grid2{grid-template-columns:1fr}.cards4{gap:14px}h1{font-size:30px}.who span{display:none}.clock{font-size:62px}.timer{min-height:0}.big{font-size:36px}}
@@ -396,16 +414,43 @@ function summaryText(d){
   if(d.avg)x+=`Concentración media: ${d.avg.toFixed(1)}/5. `;
   return x.trim();
 }
+function dayMins(list){const m=[0,0,0,0,0,0,0];list.forEach(s=>{m[(pd(s.start).getDay()+6)%7]+=s.min});return m}
+function cmpChart(){
+  const a=dayMins(rangeSessions(0)),b=dayMins(rangeSessions(-1)),max=Math.max(60,...a,...b),td=(new Date().getDay()+6)%7,L=['L','M','M','J','V','S','D'];
+  return `<div class="chart"><div class="y"><span>${Math.round(max/60*10)/10} h</span><span style="opacity:0">.</span><span>0</span></div>
+  <div class="plot" style="gap:0">${a.map((m,i)=>`<div class="pair"><div class="bar prev" style="height:${b[i]/max*100}%" title="Semana pasada: ${fmt(b[i])}"></div><div class="bar ${i===td?'today':'cur'}" style="height:${m/max*100}%" title="Esta semana: ${fmt(m)}"></div></div>`).join('')}</div>
+  <div class="x">${L.map((l,i)=>`<span class="${i===td?'t':''}">${l}</span>`).join('')}</div></div>
+  <div class="legend2"><span><i style="background:#D5DAE0"></i>Semana pasada</span><span><i style="background:var(--accent)"></i>Esta semana</span></div>`;
+}
+function donut(list){
+  const t=total(list),rows=CATS.map(c=>({c,m:total(list.filter(s=>s.cat===c.id))})).filter(r=>r.m>0).sort((a,b)=>b.m-a.m);
+  if(!t)return '<div class="empty">Sin sesiones esta semana.</div>';
+  let off=25;
+  const arcs=rows.map(({c,m})=>{const p=m/t*100,e=`<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${c.color}" stroke-width="5.5" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${off}"/>`;off-=p;return e}).join('');
+  return `<div class="donut"><div class="dring"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#EEF0F2" stroke-width="5.5"/>${arcs}</svg><div class="dc"><b>${fmt(t)}</b><span>esta semana</span></div></div>
+  <div class="dleg">${rows.map(({c,m})=>`<div><i class="dot" style="background:${c.color}"></i><span>${c.name}</span><b>${Math.round(m/t*100)}%</b></div>`).join('')}</div></div>`;
+}
+function goalTable(d){
+  const pw=rangeSessions(-1);
+  const ids=[...new Set([...Object.keys(S.goals).filter(k=>S.goals[k]>0),...d.wk.map(s=>s.cat)])];
+  const rows=ids.map(id=>{
+    const c=cat(id),m=total(d.wk.filter(s=>s.cat===id)),pm=total(pw.filter(s=>s.cat===id)),g=S.goals[id]||0,p=g?Math.min(100,Math.round(m/g*100)):0,df=m-pm;
+    return `<tr><td><i class="dot" style="background:${c.color}"></i> ${c.name}</td><td class="n">${fmt(m)}</td><td class="n">${g?fmt(g):'—'}</td>
+    <td class="pc">${g?`<div class="track mini"><i style="width:${p}%;background:${c.color}"></i></div><span class="${m>=g?'ok':''}">${m>=g?'✓':p+'%'}</span>`:'—'}</td>
+    <td class="n ${df>0?'up':df<0?'down':''}">${df>0?'+':df<0?'−':''}${df?fmt(Math.abs(df)):'='}</td></tr>`}).join('');
+  return `<table class="tbl"><thead><tr><th>Categoría</th><th>Hecho</th><th>Meta</th><th>Avance</th><th>vs ant.</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
 function vResumen(){
   const d=summaryData();
   const dl=d.delta===null?'':`<span class="delta ${d.delta>0?'up':d.delta<0?'down':'eq'}">${d.delta>0?'▲':d.delta<0?'▼':'='} ${Math.abs(d.delta)}% vs semana pasada</span>`;
-  const k=(ic,v,l)=>`<div class="card">${svg(ic,'class="ic"')}<div class="big">${v}</div><div class="sub">${l}</div></div>`;
-  return `<div class="card"><div class="sumhead"><div><h3>Resumen de la semana</h3><div class="sub" style="margin-top:6px">${rangeWeek()}</div></div>${dl}</div>
-  <p class="sumtxt">${esc(summaryText(d))}</p>
+  const chip=(ic,l,v)=>`<div class="chip2">${svg(ic)}<div><span>${l}</span><b>${v}</b></div></div>`;
+  return `<div class="card"><div class="sumhead"><div><h3>Tu semana</h3><div class="sub" style="margin-top:6px">${rangeWeek()}</div></div>${dl}</div>
+  <div class="hero2"><div class="big" style="margin:18px 0 4px">${fmt(d.t)}</div><div class="sub">${d.wk.length} ${d.wk.length===1?'sesión':'sesiones'} · semana pasada: ${fmt(d.p)}</div></div>
+  <div class="chips">${chip('flame','Mejor día',d.bestDay?d.bestDay.charAt(0).toUpperCase()+d.bestDay.slice(1):'—')}${chip('target','Metas',d.met.length+' de '+d.ids.length)}${chip('check','Días activos',d.days+' de 7')}${chip('brain','Concentración',d.avg?d.avg.toFixed(1)+' / 5':'—')}</div>
   <div class="sumshare"><button class="btn" data-act="copysum">${svg('check')}Copiar resumen</button></div></div>
-  <div class="cards4" style="margin-top:24px">${k('clock',fmt(d.t),'Esta semana · antes '+fmt(d.p))}${k('check',d.days+'/7','Días con enfoque')}${k('target',d.met.length+'/'+d.ids.length,'Metas cumplidas')}${k('brain',d.avg?d.avg.toFixed(1)+'/5':'—','Concentración media')}</div>
-  <div class="grid2"><div class="card"><h3>Enfoque por día</h3>${weekChart()}</div><div class="card"><h3>Por categoría</h3>${catBars(d.wk)}</div></div>
-  <div style="margin-top:24px">${goalsCard()}</div>`;
+  <div class="grid2" style="margin-top:24px"><div class="card"><h3>Día a día</h3><div class="sub">Comparado con la semana pasada</div>${cmpChart()}</div>
+  <div class="card"><h3>En qué invertiste el tiempo</h3><div class="sub">Reparto por categoría</div>${donut(d.wk)}</div></div>
+  <div class="card" style="margin-top:24px"><h3>Metas y categorías</h3><div class="sub">Lo hecho frente a tu meta semanal</div>${goalTable(d)}</div>`;
 }
 /* ---------- avisos ---------- */
 function ntfLabel(){const b=$('#ntf');if(b)b.textContent='Avisos: '+(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'?'sí':'no')}
