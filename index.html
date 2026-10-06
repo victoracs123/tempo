@@ -45,6 +45,7 @@ h1{margin:8px 0 0;font-size:38px;letter-spacing:-.04em;line-height:1.1}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:26px}
 .card h3{margin:0;font-size:19px;letter-spacing:-.02em}
 .card .sub{color:var(--muted);font-size:14px}
+.solo{max-width:640px;margin:0 auto}
 .stack{display:flex;flex-direction:column;gap:20px}
 /* timer */
 .timer{background:var(--dark);color:#fff;border-radius:28px;padding:26px 28px 30px;display:flex;flex-direction:column;align-items:center;min-height:520px;box-shadow:0 14px 40px rgba(15,23,32,.22)}
@@ -339,19 +340,23 @@ function sessRow(s,edit=true){
   <div class="r"><span class="dur">${s.min} min</span>${edit?`<button data-edit="${s.id}" aria-label="Editar">${svg('pen')}</button>`:''}</div>
   ${dots||s.note?`<div class="sbot">${dots}${s.note?`<div class="note">${esc(s.note)}</div>`:''}</div>`:''}</div>`;
 }
-function insight(){
+function dayCard(){
   const td=S.sessions.filter(s=>dkey(pd(s.start))===dkey(new Date()));
-  if(!td.length)return `<div class="tip">${svg('book')}<div><b>Empieza pequeño.</b><p>Elige una tarea concreta y dale 25 minutos. El progreso empieza con una sesión.</p></div></div>`;
-  return `<div class="tip">${svg('flame')}<div><b>Buen ritmo.</b><p>Llevas ${fmt(total(td))} hoy. Una sesión más y mantienes el impulso.</p></div></div>`;
+  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Tu día, hasta ahora</h3><span class="pill">Hoy</span></div>
+    <div class="big">${fmt(total(td))}</div><div class="sub">de enfoque registrado</div>
+    <div class="kpis"><div>${svg('check')}<div><b>${td.length}</b><span>sesiones</span></div></div><div>${svg('flame')}<div><b>${streak()}</b><span>días seguidos</span></div></div></div></div>`;
+}
+function weekCard(){
+  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Esta semana</h3><span class="legend"><i></i>Enfoque</span></div>${weekChart()}
+    <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:10px"><span>Un día a la vez.</span><span>Lun — Dom</span></div></div>`;
 }
 function vEnfoque(){
-  const t=S.timer,td=S.sessions.filter(s=>dkey(pd(s.start))===dkey(new Date()));
+  const t=S.timer;
   const running=t.status!=='idle',c=cat(t.cat);
-  return `<div class="grid">
-  <section class="timer">
+  return `<div class="solo"><section class="timer">
     <div class="head"><span class="lbl">Tiempo de enfoque</span><span class="chip" id="stChip">${t.status==='running'?'En curso':t.status==='paused'?'En pausa':'Listo'}</span></div>
     <div class="ring"><svg viewBox="0 0 200 200"><circle class="tr" cx="100" cy="100" r="92" fill="none" stroke-width="3"/><circle class="pg" id="pg" cx="100" cy="100" r="92" fill="none" stroke-width="3" stroke-dasharray="578.05" stroke-dashoffset="0"/></svg>
-      <div class="in"><div class="cat"><i class="dot" style="background:#E8745A"></i><span id="catLbl">${c.name}</span></div><div class="clock" id="clock">25:00</div><div class="hint">Una cosa a la vez.</div></div></div>
+      <div class="in"><div class="cat"><i class="dot" style="background:#E8745A"></i><span id="catLbl">${c.name}</span></div><div class="clock" id="clock">25:00</div></div></div>
     ${running?`<div class="tname">${esc(t.title||c.name)}</div><div class="tsub">Sesión de ${Math.round(t.dur/60)} minutos</div>`:`<div class="durs">${[15,25,45,60].map(m=>`<button data-dur="${m}" class="${t.dur===m*60?'on':''}">${m} min</button>`).join('')}</div><div style="height:14px"></div>`}
     <div class="tfields">
       ${running?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
@@ -362,24 +367,13 @@ function vEnfoque(){
         <button class="btn sec" data-act="finish" ${running?'':'disabled'}>${svg('check')}Guardar</button>
       </div>
     </div>
-    <div class="foot-note">Guardado automático al completar. Si cierras Tempo, se registra al volver.</div>
-  </section>
-  <aside class="stack">
-    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Tu día, hasta ahora</h3><span class="pill">Hoy</span></div>
-      <div class="big">${fmt(total(td))}</div><div class="sub">de enfoque registrado</div>
-      <div class="kpis"><div>${svg('check')}<div><b>${td.length}</b><span>sesiones</span></div></div><div>${svg('flame')}<div><b>${streak()}</b><span>días seguidos</span></div></div></div></div>
-    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Esta semana</h3><span class="legend"><i></i>Enfoque</span></div>${weekChart()}
-      <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:10px"><span>Un día a la vez.</span><span>Lun — Dom</span></div></div>
-    ${insight()}
-  </aside></div>
-  <div style="margin-top:24px">${goalsCard()}</div>
-  <h2>Sesiones recientes<button data-tab="historial">Ver historial</button></h2>
-  <div class="list">${sorted().slice(0,5).map(s=>sessRow(s)).join('')||'<div class="empty">Aún no hay sesiones.</div>'}</div>`;
+  </section></div>`;
 }
 function vHistorial(){
   const q=fText.toLowerCase();
   const l=sorted().filter(s=>(!fCat||s.cat===fCat)&&(!q||(s.title+' '+s.note).toLowerCase().includes(q)));
-  return `<div class="card"><h3>Tu historial de enfoque</h3><div class="sub" style="margin-top:6px">${l.length} ${l.length===1?'sesión':'sesiones'} · ${fmt(total(l))} en total</div>
+  return `<div class="grid2" style="margin-bottom:24px">${dayCard()}${weekCard()}</div>
+  <div class="card"><h3>Tu historial de enfoque</h3><div class="sub" style="margin-top:6px">${l.length} ${l.length===1?'sesión':'sesiones'} · ${fmt(total(l))} en total</div>
   <div class="tools"><label class="search">${svg('search')}<input id="fText" placeholder="Buscar tarea o nota" value="${esc(fText)}"></label>
   <select class="sel" id="fCat"><option value="">Todas las categorías</option>${CATS.map(c=>`<option value="${c.id}" ${fCat===c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>
   <div class="slist" style="margin-top:14px">${l.map(s=>sessRow(s)).join('')||'<div class="empty">Nada que coincida.</div>'}</div></div>`;
