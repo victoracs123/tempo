@@ -171,6 +171,12 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .hint2{font-size:13px;color:var(--muted);margin-top:8px}
 .goalrow{display:grid;grid-template-columns:1fr 100px 70px;align-items:center;gap:10px;margin-top:10px}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1B2128;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:30;animation:pop .2s var(--ease)}
+.sumhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.delta{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+.delta.up{background:#E6F4EF;color:#2E7D5B}.delta.down{background:#FCEBE6;color:#B5452B}.delta.eq{background:var(--soft);color:#6A737D}
+.sumtxt{font-size:17px;margin:18px 0 0;color:#2F373F}
+.sumshare{margin-top:18px;display:flex;gap:10px}
+.sumshare .btn{height:46px;background:var(--accent);color:#fff;border-bottom:4px solid var(--accent-edge)}
 @keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media(max-width:860px){.ghost{font-size:0;gap:0;padding:10px}.ghost svg{width:24px;height:24px;stroke:var(--accent)}.tab{padding:14px 8px}.grid,.grid2{grid-template-columns:1fr}.cards4{gap:14px}h1{font-size:30px}.who span{display:none}.clock{font-size:62px}.timer{min-height:0}.big{font-size:36px}}
@@ -193,7 +199,7 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
   <div id="view"></div>
   <footer>
     <span>Horario de Santo Domingo · Guardado en este dispositivo</span>
-    <span class="acts"><button id="exp">Exportar</button><button id="imp">Importar</button></span>
+    <span class="acts"><button id="ntf"></button><button id="exp">Exportar</button><button id="imp">Importar</button></span>
   </footer>
 </main>
 <input type="file" id="file" accept="application/json" hidden>
@@ -217,7 +223,7 @@ const SEED=[
  {id:'s3',title:'FSP',cat:'aleman',min:25,start:'2026-10-05T12:00:00',conc:3,note:'Decir en voz alta todo el FSP- Anamnese hasta l aparte'}
 ];
 const KEY='tempo.v3';
-let S=load();
+let S=load();S.prefs=Object.assign({notify:false},S.prefs);
 function load(){
   try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.sessions))return Object.assign({goals:{...DEF_GOALS},timer:idle()},r)}catch(e){}
   return {sessions:SEED.map(x=>({...x})),goals:{...DEF_GOALS},timer:idle()};
@@ -265,7 +271,7 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 
 /* ---------- state / tabs ---------- */
 let tab='enfoque',fCat='',fText='',statMode='total';
-const TABS=[['enfoque','Enfoque','clock'],['historial','Historial','hist'],['stats','Estadísticas','bars']];
+const TABS=[['enfoque','Enfoque','clock'],['historial','Historial','hist'],['stats','Estadísticas','bars'],['resumen','Resumen','spark']];
 function renderChrome(){
   $('#tabs').innerHTML=TABS.map(([id,l,ic])=>`<button class="tab ${tab===id?'on':''}" data-tab="${id}">${svg(ic)}${l}</button>`).join('');
   $('#addBtn').innerHTML=svg('plus')+'Añadir sesión';
@@ -363,10 +369,59 @@ function vStats(){
   <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Tu tiempo por categoría</h3><div class="seg"><button data-mode="total" class="${statMode==='total'?'on':''}">Total</button><button data-mode="semana" class="${statMode==='semana'?'on':''}">Semana</button></div></div>${catBars(list)}</div></div>
   <div style="margin-top:24px">${goalsCard()}</div>`;
 }
+function rangeSessions(off){
+  const a=weekStart();a.setDate(a.getDate()+7*off);const b=new Date(a);b.setDate(b.getDate()+7);
+  return S.sessions.filter(s=>{const d=pd(s.start);return d>=a&&d<b});
+}
+const DIAS=['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+function summaryData(){
+  const wk=rangeSessions(0),pw=rangeSessions(-1),t=total(wk),p=total(pw);
+  const byDay=[0,0,0,0,0,0,0];wk.forEach(s=>{byDay[(pd(s.start).getDay()+6)%7]+=s.min});
+  const bi=byDay.indexOf(Math.max(...byDay));
+  const cats=CATS.map(c=>({c,m:total(wk.filter(s=>s.cat===c.id))})).filter(r=>r.m>0).sort((a,b)=>b.m-a.m);
+  const ids=Object.keys(S.goals).filter(k=>S.goals[k]>0);
+  const met=ids.filter(id=>total(wk.filter(s=>s.cat===id))>=S.goals[id]);
+  const missing=ids.filter(id=>!met.includes(id)).map(id=>({id,left:S.goals[id]-total(wk.filter(s=>s.cat===id))})).sort((a,b)=>a.left-b.left);
+  const cs=wk.filter(s=>s.conc),avg=cs.length?cs.reduce((a,s)=>a+s.conc,0)/cs.length:0;
+  const days=new Set(wk.map(s=>dkey(pd(s.start)))).size;
+  return {wk,t,p,delta:p?Math.round((t-p)/p*100):null,bestDay:t?DIAS[bi]:null,bestMin:byDay[bi],top:cats[0],ids,met,missing,avg,days};
+}
+function summaryText(d){
+  if(!d.t)return 'Esta semana aún no hay sesiones registradas.';
+  let x=`Esta semana: ${fmt(d.t)} en ${d.wk.length} ${d.wk.length===1?'sesión':'sesiones'}, ${d.days} ${d.days===1?'día activo':'días activos'}. `;
+  if(d.top)x+=`Lo que más trabajaste: ${d.top.c.name} (${fmt(d.top.m)}). `;
+  x+=`Mejor día: ${d.bestDay} (${fmt(d.bestMin)}). `;
+  if(d.ids.length)x+=`Metas cumplidas: ${d.met.length} de ${d.ids.length}. `;
+  if(d.missing[0])x+=`La más cercana: ${cat(d.missing[0].id).name}, te faltan ${fmt(d.missing[0].left)}. `;
+  if(d.avg)x+=`Concentración media: ${d.avg.toFixed(1)}/5. `;
+  return x.trim();
+}
+function vResumen(){
+  const d=summaryData();
+  const dl=d.delta===null?'':`<span class="delta ${d.delta>0?'up':d.delta<0?'down':'eq'}">${d.delta>0?'▲':d.delta<0?'▼':'='} ${Math.abs(d.delta)}% vs semana pasada</span>`;
+  const k=(ic,v,l)=>`<div class="card">${svg(ic,'class="ic"')}<div class="big">${v}</div><div class="sub">${l}</div></div>`;
+  return `<div class="card"><div class="sumhead"><div><h3>Resumen de la semana</h3><div class="sub" style="margin-top:6px">${rangeWeek()}</div></div>${dl}</div>
+  <p class="sumtxt">${esc(summaryText(d))}</p>
+  <div class="sumshare"><button class="btn" data-act="copysum">${svg('check')}Copiar resumen</button></div></div>
+  <div class="cards4" style="margin-top:24px">${k('clock',fmt(d.t),'Esta semana · antes '+fmt(d.p))}${k('check',d.days+'/7','Días con enfoque')}${k('target',d.met.length+'/'+d.ids.length,'Metas cumplidas')}${k('brain',d.avg?d.avg.toFixed(1)+'/5':'—','Concentración media')}</div>
+  <div class="grid2"><div class="card"><h3>Enfoque por día</h3>${weekChart()}</div><div class="card"><h3>Por categoría</h3>${catBars(d.wk)}</div></div>
+  <div style="margin-top:24px">${goalsCard()}</div>`;
+}
+/* ---------- avisos ---------- */
+function ntfLabel(){const b=$('#ntf');if(b)b.textContent='Avisos: '+(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'?'sí':'no')}
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=660;g.gain.setValueAtTime(.15,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.8);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.8)}catch(e){}}
+function notifyDone(title,body){
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+  beep();
+  if(!(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'))return;
+  const o={body,icon:'icon.svg',tag:'tempo-done'};
+  if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
+  else try{new Notification(title,o)}catch(e){}
+}
 function render(){
   renderChrome();
   const v=$('#view');
-  v.innerHTML=tab==='enfoque'?vEnfoque():tab==='historial'?vHistorial():vStats();
+  v.innerHTML=tab==='enfoque'?vEnfoque():tab==='historial'?vHistorial():tab==='resumen'?vResumen():vStats();
   tick();
 }
 
@@ -377,6 +432,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.edit){openSession(S.sessions.find(s=>s.id===t.dataset.edit));return}
   if(t.dataset.dur){if(S.timer.status==='idle'){const s=+t.dataset.dur*60;S.timer.dur=s;S.timer.remaining=s;save();render()}return}
   if(t.dataset.mode){statMode=t.dataset.mode;render();return}
+  if(t.dataset.act==='copysum'){const x=summaryText(summaryData());(navigator.clipboard?navigator.clipboard.writeText(x):Promise.reject()).then(()=>toast('Resumen copiado')).catch(()=>toast('No se pudo copiar'));return}
   if(t.dataset.act==='goals')openGoals();
   if(t.dataset.act==='toggle')toggle();
   if(t.dataset.act==='finish')finish(true);
@@ -416,6 +472,7 @@ function record(min,note){
 function reset(){const k=S.timer;S.timer={...idle(),cat:k.cat,dur:k.dur,remaining:k.dur}}
 function complete(){
   const t=S.timer,s=record(Math.round(t.dur/60));
+  notifyDone('Sesión completada','Has enfocado '+Math.round(t.dur/60)+' min en '+(s.title||'tu tarea')+'. Guarda una nota.');
   reset();save();render();openSession(s,true);
 }
 function finish(manual){
@@ -469,6 +526,13 @@ function openGoals(){
 }
 
 /* ---------- backup ---------- */
+$('#ntf').onclick=async()=>{
+  if(!('Notification' in window)){toast('Este navegador no soporta avisos.');return}
+  if(S.prefs.notify){S.prefs.notify=false;save();ntfLabel();toast('Avisos desactivados');return}
+  const p=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  if(p==='granted'){S.prefs.notify=true;save();ntfLabel();toast('Avisos activados');notifyDone('Tempo','Los avisos funcionan.')}
+  else toast('Permiso de avisos denegado.');
+};
 $('#exp').onclick=()=>{
   const b=new Blob([JSON.stringify({app:'tempo',v:3,sessions:S.sessions,goals:S.goals},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`tempo-${dkey(new Date())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -492,7 +556,7 @@ $('#file').onchange=async e=>{
   const t=S.timer;
   if(t.status==='running'&&t.endAt<=Date.now()){const s=record(Math.round(t.dur/60));reset();save();render();openSession(s,true)}
   else render();
-  save();
+  save();ntfLabel();
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
