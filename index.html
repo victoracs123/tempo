@@ -48,20 +48,30 @@ h1{margin:8px 0 0;font-size:38px;letter-spacing:-.04em;line-height:1.1}
 .solo{max-width:640px;margin:0 auto}
 .stack{display:flex;flex-direction:column;gap:20px}
 /* timer */
-.timer{background:var(--dark);color:#fff;border-radius:28px;padding:26px 28px 30px;display:flex;flex-direction:column;align-items:center;min-height:520px;box-shadow:0 14px 40px rgba(15,23,32,.22)}
+.timer{background:radial-gradient(130% 70% at 50% 0%,#36424D 0%,#242C33 48%,#1B2126 100%);color:#fff;border-radius:30px;padding:24px 26px 30px;display:flex;flex-direction:column;align-items:center;min-height:520px;box-shadow:0 18px 50px rgba(15,23,32,.28),inset 0 1px 0 rgba(255,255,255,.06);transition:box-shadow .6s}
+.timer.live{box-shadow:0 18px 60px rgba(217,88,58,.28),inset 0 1px 0 rgba(255,255,255,.06)}
 .timer .head{width:100%;display:flex;justify-content:space-between;align-items:center}
 .timer .lbl{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#C9CFD6}
 .timer .lbl:before{content:"";width:16px;height:3px;border-radius:2px;background:var(--accent)}
-.chip{border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 14px;font-size:13px;color:#DDE2E7}
-.ring{position:relative;width:min(340px,76vw);aspect-ratio:1;margin:22px 0 14px}
-.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring .tr{stroke:rgba(255,255,255,.08)}
-.ring .pg{stroke:#E8745A;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
-.ring .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-.ring .cat{display:flex;align-items:center;gap:8px;font-size:15px;color:#E8EBEE}
+.chip{border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 14px;font-size:13px;color:#DDE2E7;display:flex;align-items:center;gap:8px}
+.chip:before{content:"";width:7px;height:7px;border-radius:50%;background:#7C8791}
+.timer.live .chip:before{background:#5BD39B;animation:blink 1.4s infinite}
+.timer.paused .chip:before{background:#F0B84A}
+.ring{position:relative;width:min(340px,80vw);aspect-ratio:1;margin:18px 0 12px}
+.ring:before{content:"";position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,rgba(232,116,90,.20) 0%,rgba(232,116,90,0) 70%);opacity:0;transition:opacity .6s}
+.timer.live .ring:before{opacity:1;animation:breathe 3.2s ease-in-out infinite}
+.ring svg{position:relative;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.ring .tr{stroke:rgba(255,255,255,.07)}
+.ring .tk{stroke:rgba(255,255,255,.16);stroke-linecap:round;transition:stroke .3s}
+.ring .tk.lit{stroke:#E8745A}
+.ring .pg{stroke:url(#gr);stroke-linecap:round;transition:stroke-dashoffset .25s linear;filter:drop-shadow(0 0 6px rgba(232,116,90,.55))}
+.ring .kn{fill:#fff;filter:drop-shadow(0 0 5px rgba(255,255,255,.7))}
+.timer.live .kn{animation:pulse 1.6s ease-in-out infinite;transform-origin:204px 110px}
+.ring .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ring .cat{display:flex;align-items:center;gap:8px;font-size:13px;color:#E8EBEE;background:rgba(255,255,255,.08);border-radius:999px;padding:6px 14px;letter-spacing:.02em}
+.clock{font-size:78px;font-weight:200;letter-spacing:-.045em;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 2px 24px rgba(232,116,90,.25)}
+.timer .csub{font-size:13px;color:#AEB6BF;min-height:18px}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.clock{font-size:76px;font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1}
-.ring .hint{font-size:14px;color:#AEB6BF}
 .tname{font-size:20px;font-weight:700;margin-top:6px;text-align:center}
 .tsub{color:#AEB6BF;font-size:14px;margin:2px 0 14px}
 .tfields{width:100%;max-width:540px;display:flex;flex-direction:column;gap:10px}
@@ -202,6 +212,7 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .tbl .pc{min-width:110px}.tbl .pc .track.mini{height:8px;margin:0 0 4px}.tbl .pc span{font-size:13px;color:var(--muted)}.tbl .pc span.ok{color:#2E9D6B;font-weight:700}
 @media(max-width:380px){.tab{font-size:11px}.sess{padding:14px;gap:2px 12px}}
 @media(max-width:860px){.chips{grid-template-columns:1fr 1fr}.tbl{font-size:13px}.tbl th,.tbl td{padding:10px 4px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}.dring{width:150px;height:150px}}
+@keyframes blink{50%{opacity:.35}}@keyframes breathe{50%{transform:scale(1.08);opacity:.6}}@keyframes pulse{50%{transform:scale(1.5)}}
 @keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media(max-width:860px){.tabs{gap:6px}.tabs nav{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;overflow:visible}.tab{flex-direction:column;gap:5px;padding:10px 0 12px;font-size:12px;letter-spacing:-.01em;justify-content:center;text-align:center}.tab svg{width:21px;height:21px}.ghost{font-size:0;gap:0;padding:0;width:44px;height:44px;border-radius:14px;background:#FDF1ED;justify-content:center;flex:none;margin-bottom:6px}.ghost svg{width:22px;height:22px;stroke:var(--accent)}.grid,.grid2{grid-template-columns:1fr}.cards4{gap:14px}h1{font-size:30px}.who span{display:none}.clock{font-size:62px}.timer{min-height:0}.big{font-size:36px}}
@@ -353,10 +364,13 @@ function weekCard(){
 function vEnfoque(){
   const t=S.timer;
   const running=t.status!=='idle',c=cat(t.cat);
-  return `<div class="solo"><section class="timer">
+  return `<div class="solo"><section class="timer ${t.status==="running"?"live":t.status==="paused"?"paused":""}">
     <div class="head"><span class="lbl">Tiempo de enfoque</span><span class="chip" id="stChip">${t.status==='running'?'En curso':t.status==='paused'?'En pausa':'Listo'}</span></div>
-    <div class="ring"><svg viewBox="0 0 200 200"><circle class="tr" cx="100" cy="100" r="92" fill="none" stroke-width="3"/><circle class="pg" id="pg" cx="100" cy="100" r="92" fill="none" stroke-width="3" stroke-dasharray="578.05" stroke-dashoffset="0"/></svg>
-      <div class="in"><div class="cat"><i class="dot" style="background:#E8745A"></i><span id="catLbl">${c.name}</span></div><div class="clock" id="clock">25:00</div></div></div>
+    <div class="ring"><svg viewBox="0 0 220 220"><defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7B09C"/><stop offset=".55" stop-color="#E8745A"/><stop offset="1" stop-color="#D9583A"/></linearGradient></defs>
+      <g id="tks">${Array.from({length:60},(_,i)=>{const a=i*6*Math.PI/180,L=i%5===0,r1=L?101:103,r2=L?109:107;return `<line class="tk" x1="${(110+r1*Math.cos(a)).toFixed(2)}" y1="${(110+r1*Math.sin(a)).toFixed(2)}" x2="${(110+r2*Math.cos(a)).toFixed(2)}" y2="${(110+r2*Math.sin(a)).toFixed(2)}" stroke-width="${L?2.4:1.4}"/>`}).join('')}</g>
+      <circle class="tr" cx="110" cy="110" r="94" fill="none" stroke-width="5"/><circle class="pg" id="pg" cx="110" cy="110" r="94" fill="none" stroke-width="5" stroke-dasharray="590.62" stroke-dashoffset="0"/>
+      <g id="kn"><circle class="kn" cx="204" cy="110" r="4.5"/></g></svg>
+      <div class="in"><div class="cat"><i class="dot" style="background:#E8745A"></i><span id="catLbl">${c.name}</span></div><div class="clock" id="clock">25:00</div><div class="csub" id="csub"></div></div></div>
     ${running?`<div class="tname">${esc(t.title||c.name)}</div><div class="tsub">Sesión de ${Math.round(t.dur/60)} minutos</div>`:`<div class="durs">${[15,25,45,60].map(m=>`<button data-dur="${m}" class="${t.dur===m*60?'on':''}">${m} min</button>`).join('')}</div><div style="height:14px"></div>`}
     <div class="tfields">
       ${running?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
@@ -474,7 +488,7 @@ function notifyDone(title,body){
   else try{new Notification(title,o)}catch(e){}
 }
 function render(){
-  renderChrome();
+  lastLit=-1;renderChrome();
   const v=$('#view');
   v.innerHTML=tab==='enfoque'?vEnfoque():tab==='historial'?vHistorial():tab==='resumen'?vResumen():vStats();
   tick();
@@ -505,12 +519,19 @@ document.addEventListener('change',e=>{
 
 /* ---------- timer ---------- */
 function remaining(){const t=S.timer;return t.status==='running'?Math.max(0,Math.round((t.endAt-Date.now())/1000)):t.remaining}
+let lastLit=-1;
 function tick(){
   const t=S.timer;if(!$('#clock'))return;
   const r=remaining();
   if(t.status==='running'&&r<=0){complete();return}
   $('#clock').textContent=`${pad(Math.floor(r/60))}:${pad(r%60)}`;
-  const pg=$('#pg');if(pg){const p=t.status==='idle'?0:1-r/t.dur;pg.style.strokeDashoffset=578.05*p}
+  const p=t.status==='idle'?0:Math.min(1,Math.max(0,1-r/t.dur));
+  const pg=$('#pg');if(pg){pg.style.strokeDashoffset=590.62*p;pg.style.opacity=t.status==='idle'?.35:1}
+  const kn=$('#kn');if(kn)kn.setAttribute('transform',`rotate(${(p*360).toFixed(2)} 110 110)`);
+  const lit=Math.floor(p*60);
+  if(lit!==lastLit){lastLit=lit;document.querySelectorAll('#tks .tk').forEach((l,i)=>l.classList.toggle('lit',i<lit))}
+  const cs=$('#csub');if(cs)cs.textContent=t.status==='running'?'Termina a las '+new Date(t.endAt).toLocaleTimeString('es-DO',{hour:'numeric',minute:'2-digit'}):t.status==='paused'?'En pausa':'Listo para empezar';
+  const tm=document.querySelector('.timer');if(tm)tm.classList.toggle('live',t.status==='running');
   document.title=t.status==='idle'?'Tempo · Tu tiempo, con intención':`${$('#clock').textContent} · Tempo`;
 }
 function toggle(){
