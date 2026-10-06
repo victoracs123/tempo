@@ -126,20 +126,25 @@ select.dk option{color:#111}
 /* sessions */
 h2{font-size:22px;margin:34px 0 14px;display:flex;justify-content:space-between;align-items:baseline;letter-spacing:-.02em}
 h2 button{font-size:15px;font-weight:700;color:#5F6872}
-.list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
-.sess{display:flex;gap:18px;align-items:flex-start;padding:22px 26px;border-bottom:1px solid var(--border)}
-.sess:last-child{border:0}
-.sess .ico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;flex:none}
-.sess .ico svg{width:26px;height:26px}
-.sess .mid{flex:1;min-width:0}
-.sess .tt{font-weight:600;font-size:17px}
-.sess .meta{color:var(--muted);font-size:14px;margin-top:2px}
-.sess .conc{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;margin-top:2px}
-.sess .conc svg{width:15px;height:15px}
-.sess .note{margin-top:8px;color:#4B545E;font-size:15px}
-.sess .r{display:flex;align-items:center;gap:14px;color:#4B545E;font-weight:600;white-space:nowrap}
-.sess .r button{color:#8B939C;padding:6px}
-.sess .r button svg{width:18px;height:18px}
+.list,.slist{display:flex;flex-direction:column;gap:12px}
+.list .empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.sess{display:grid;grid-template-columns:46px 1fr auto;gap:2px 14px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 1px 0 rgba(0,0,0,.02),0 6px 18px rgba(15,23,32,.04);position:relative;overflow:hidden}
+.sess:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--cc,var(--accent))}
+.sess .ico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center}
+.sess .ico svg{width:22px;height:22px}
+.sess .mid{min-width:0}
+.sess .tt{font-weight:700;font-size:16px;letter-spacing:-.01em;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sess .meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;color:var(--muted);font-size:13px;margin-top:5px}
+.cchip{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.sess .r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.dur{background:var(--soft);color:#39424B;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;white-space:nowrap}
+.sess .r button{color:#8B939C;padding:4px;display:grid;place-items:center;border-radius:8px}
+.sess .r button:active{background:var(--soft)}
+.sess .r button svg{width:17px;height:17px}
+.sbot{grid-column:1/-1;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.cdots{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.cdots span{display:flex;gap:4px}.cdots i{width:8px;height:8px;border-radius:50%;background:#E3E6EA}.cdots i.on{background:var(--cc,var(--accent))}
+.sess .note{background:#F6F7F9;border-radius:12px;padding:10px 12px;color:#4B545E;font-size:14px;line-height:1.4}
 .empty{padding:40px 26px;text-align:center;color:var(--muted)}
 .tools{display:flex;gap:12px;margin:20px 0 6px;flex-wrap:wrap}
 .search{flex:1;min-width:200px;display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:14px;padding:0 16px;height:52px;background:#fff}
@@ -194,10 +199,11 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .tbl td{padding:14px 8px;border-bottom:1px solid var(--border)}.tbl tr:last-child td{border:0}
 .tbl .n{white-space:nowrap}.tbl td.up{color:#2E7D5B;font-weight:700}.tbl td.down{color:#B5452B;font-weight:700}
 .tbl .pc{min-width:110px}.tbl .pc .track.mini{height:8px;margin:0 0 4px}.tbl .pc span{font-size:13px;color:var(--muted)}.tbl .pc span.ok{color:#2E9D6B;font-weight:700}
+@media(max-width:380px){.tab{font-size:11px}.sess{padding:14px;gap:2px 12px}}
 @media(max-width:860px){.chips{grid-template-columns:1fr 1fr}.tbl{font-size:13px}.tbl th,.tbl td{padding:10px 4px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}.dring{width:150px;height:150px}}
 @keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-@media(max-width:860px){.ghost{font-size:0;gap:0;padding:10px}.ghost svg{width:24px;height:24px;stroke:var(--accent)}.tab{padding:14px 8px}.grid,.grid2{grid-template-columns:1fr}.cards4{gap:14px}h1{font-size:30px}.who span{display:none}.clock{font-size:62px}.timer{min-height:0}.big{font-size:36px}}
+@media(max-width:860px){.tabs{gap:6px}.tabs nav{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;overflow:visible}.tab{flex-direction:column;gap:5px;padding:10px 0 12px;font-size:12px;letter-spacing:-.01em;justify-content:center;text-align:center}.tab svg{width:21px;height:21px}.ghost{font-size:0;gap:0;padding:0;width:44px;height:44px;border-radius:14px;background:#FDF1ED;justify-content:center;flex:none;margin-bottom:6px}.ghost svg{width:22px;height:22px;stroke:var(--accent)}.grid,.grid2{grid-template-columns:1fr}.cards4{gap:14px}h1{font-size:30px}.who span{display:none}.clock{font-size:62px}.timer{min-height:0}.big{font-size:36px}}
 </style>
 </head>
 <body>
@@ -266,7 +272,7 @@ function streak(){
   let n=0;while(days.has(dkey(d))){n++;d.setDate(d.getDate()-1)}return n;
 }
 const MES=['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
-const dateStr=s=>{const d=pd(s);return `${d.getDate()} ${MES[d.getMonth()]} · ${d.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`};
+const dateStr=s=>{const d=pd(s);return `${d.getDate()} ${MES[d.getMonth()]} · ${d.toLocaleTimeString('es-DO',{hour:'numeric',minute:'2-digit'})}`};
 const rangeWeek=()=>{const a=weekStart(),b=new Date(a);b.setDate(b.getDate()+6);return `${a.getDate()} ${MES[a.getMonth()]} — ${b.getDate()} ${MES[b.getMonth()]}`};
 const I={
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -327,11 +333,11 @@ function goalsCard(){
 }
 function sessRow(s,edit=true){
   const c=cat(s.cat);
-  return `<div class="sess"><div class="ico" style="background:${c.bg};color:${c.color}">${svg('book')}</div>
-  <div class="mid"><div class="tt">${esc(s.title||c.name)}</div><div class="meta">${c.name} · ${dateStr(s.start)}</div>
-  ${s.conc?`<div class="conc">${svg('brain')}Concentración ${s.conc}/5</div>`:''}
-  ${s.note?`<div class="note">${esc(s.note)}</div>`:''}</div>
-  <div class="r">${s.min} min${edit?`<button data-edit="${s.id}" aria-label="Editar">${svg('pen')}</button>`:''}</div></div>`;
+  const dots=s.conc?`<div class="cdots">${svg('brain','width="15" height="15"')}<span>${[1,2,3,4,5].map(n=>`<i class="${n<=s.conc?'on':''}"></i>`).join('')}</span>Concentración ${s.conc}/5</div>`:'';
+  return `<div class="sess" style="--cc:${c.color}"><div class="ico" style="background:${c.bg};color:${c.color}">${svg('book')}</div>
+  <div class="mid"><div class="tt">${esc(s.title||c.name)}</div><div class="meta"><span class="cchip" style="background:${c.bg};color:${c.color}">${c.name}</span><span>${dateStr(s.start)}</span></div></div>
+  <div class="r"><span class="dur">${s.min} min</span>${edit?`<button data-edit="${s.id}" aria-label="Editar">${svg('pen')}</button>`:''}</div>
+  ${dots||s.note?`<div class="sbot">${dots}${s.note?`<div class="note">${esc(s.note)}</div>`:''}</div>`:''}</div>`;
 }
 function insight(){
   const td=S.sessions.filter(s=>dkey(pd(s.start))===dkey(new Date()));
@@ -376,7 +382,7 @@ function vHistorial(){
   return `<div class="card"><h3>Tu historial de enfoque</h3><div class="sub" style="margin-top:6px">${l.length} ${l.length===1?'sesión':'sesiones'} · ${fmt(total(l))} en total</div>
   <div class="tools"><label class="search">${svg('search')}<input id="fText" placeholder="Buscar tarea o nota" value="${esc(fText)}"></label>
   <select class="sel" id="fCat"><option value="">Todas las categorías</option>${CATS.map(c=>`<option value="${c.id}" ${fCat===c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>
-  <div>${l.map(s=>sessRow(s)).join('')||'<div class="empty">Nada que coincida.</div>'}</div></div>`;
+  <div class="slist" style="margin-top:14px">${l.map(s=>sessRow(s)).join('')||'<div class="empty">Nada que coincida.</div>'}</div></div>`;
 }
 function vStats(){
   const all=S.sessions,conc=all.filter(s=>s.conc),avg=conc.length?(conc.reduce((a,s)=>a+s.conc,0)/conc.length).toFixed(1):'—';
