@@ -452,6 +452,16 @@ function vResumen(){
   <div class="card"><h3>En qué invertiste el tiempo</h3><div class="sub">Reparto por categoría</div>${donut(d.wk)}</div></div>
   <div class="card" style="margin-top:24px"><h3>Metas y categorías</h3><div class="sub">Lo hecho frente a tu meta semanal</div>${goalTable(d)}</div>`;
 }
+function copyText(x){
+  const ok=()=>toast('Resumen copiado');
+  const legacy=()=>{
+    try{const ta=document.createElement('textarea');ta.value=x;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,x.length);const r=document.execCommand('copy');ta.remove();if(r){ok();return}}catch(e){}
+    manual();
+  };
+  const manual=()=>{const m=modal(`<button class="x" id="mx" aria-label="Cerrar">×</button><h3>Resumen</h3><div class="sub">Mantén pulsado para copiar.</div><textarea class="in" id="sumTa" rows="6" readonly style="margin-top:14px">${esc(x)}</textarea>`);$('#mx').onclick=closeModal;const t=$('#sumTa');t.focus();t.select()};
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(x).then(ok).catch(legacy);
+  else legacy();
+}
 /* ---------- avisos ---------- */
 function ntfLabel(){const b=$('#ntf');if(b)b.textContent='Avisos: '+(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'?'sí':'no')}
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=660;g.gain.setValueAtTime(.15,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.8);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.8)}catch(e){}}
@@ -477,7 +487,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.edit){openSession(S.sessions.find(s=>s.id===t.dataset.edit));return}
   if(t.dataset.dur){if(S.timer.status==='idle'){const s=+t.dataset.dur*60;S.timer.dur=s;S.timer.remaining=s;save();render()}return}
   if(t.dataset.mode){statMode=t.dataset.mode;render();return}
-  if(t.dataset.act==='copysum'){const x=summaryText(summaryData());(navigator.clipboard?navigator.clipboard.writeText(x):Promise.reject()).then(()=>toast('Resumen copiado')).catch(()=>toast('No se pudo copiar'));return}
+  if(t.dataset.act==='copysum'){copyText(summaryText(summaryData()));return}
   if(t.dataset.act==='goals')openGoals();
   if(t.dataset.act==='toggle')toggle();
   if(t.dataset.act==='finish')finish(true);
