@@ -212,6 +212,14 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .tbl .pc{min-width:110px}.tbl .pc .track.mini{height:8px;margin:0 0 4px}.tbl .pc span{font-size:13px;color:var(--muted)}.tbl .pc span.ok{color:#2E9D6B;font-weight:700}
 @media(max-width:380px){.tab{font-size:11px}.sess{padding:14px;gap:2px 12px}}
 @media(max-width:860px){.chips{grid-template-columns:1fr 1fr}.tbl{font-size:13px}.tbl th,.tbl td{padding:10px 4px}.tbl th:nth-child(3),.tbl td:nth-child(3){display:none}.dring{width:150px;height:150px}}
+.timer.brk .pg{stroke:url(#gb);filter:drop-shadow(0 0 6px rgba(76,201,160,.55))}
+.timer.brk .tk.lit{stroke:#4CC9A0}
+.timer.brk.live{box-shadow:0 18px 60px rgba(76,201,160,.25),inset 0 1px 0 rgba(255,255,255,.06)}
+.timer.brk .ring:before{background:radial-gradient(circle,rgba(76,201,160,.20) 0%,rgba(76,201,160,0) 70%)}
+.timer.brk .lbl:before{background:#4CC9A0}
+.timer.brk .btn.pri{background:#2FA87F;border-bottom-color:#228763}
+.btn.brkbtn{width:100%;background:rgba(76,201,160,.14);border:1px solid rgba(76,201,160,.5);color:#8FE3C5;border-bottom:4px solid rgba(76,201,160,.3);margin-bottom:12px}
+.bhint{font-size:13px;color:#98A1AB;text-align:center;margin:-2px 0 10px}
 @keyframes blink{50%{opacity:.35}}@keyframes breathe{50%{transform:scale(1.08);opacity:.6}}@keyframes pulse{50%{transform:scale(1.5)}}
 @keyframes fade{from{opacity:0}}@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -235,7 +243,7 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
   <div id="view"></div>
   <footer>
     <span>Horario de Santo Domingo · Guardado en este dispositivo</span>
-    <span class="acts"><button id="ntf"></button><button id="exp">Exportar</button><button id="imp">Importar</button></span>
+    <span class="acts"><button id="abk"></button><button id="snd">Probar sonido</button><button id="ntf"></button><button id="exp">Exportar</button><button id="imp">Importar</button></span>
   </footer>
 </main>
 <input type="file" id="file" accept="application/json" hidden>
@@ -259,12 +267,14 @@ const SEED=[
  {id:'s3',title:'FSP',cat:'aleman',min:25,start:'2026-10-05T12:00:00',conc:3,note:'Decir en voz alta todo el FSP- Anamnese hasta l aparte'}
 ];
 const KEY='tempo.v3';
-let S=load();S.prefs=Object.assign({notify:false},S.prefs);
+let S=load();S.prefs=Object.assign({notify:false,autoBreak:true},S.prefs);
 function load(){
   try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.sessions))return Object.assign({goals:{...DEF_GOALS},timer:idle()},r)}catch(e){}
   return {sessions:SEED.map(x=>({...x})),goals:{...DEF_GOALS},timer:idle()};
 }
-function idle(){return {status:'idle',dur:1500,remaining:1500,endAt:0,title:'',cat:'aleman',note:''}}
+function idle(){return {status:'idle',mode:'focus',pendingBreak:0,dur:1500,remaining:1500,endAt:0,title:'',cat:'aleman',note:''}}
+const BREAKS={15:3,25:5,45:10,60:15};
+const breakMin=sec=>BREAKS[Math.round(sec/60)]||Math.max(1,Math.round(sec/60/5));
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- helpers ---------- */
@@ -362,23 +372,26 @@ function weekCard(){
     <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:10px"><span>Un día a la vez.</span><span>Lun — Dom</span></div></div>`;
 }
 function vEnfoque(){
-  const t=S.timer;
+  const t=S.timer,brk=t.mode==='break';
   const running=t.status!=='idle',c=cat(t.cat);
-  return `<div class="solo"><section class="timer ${t.status==="running"?"live":t.status==="paused"?"paused":""}">
-    <div class="head"><span class="lbl">Tiempo de enfoque</span><span class="chip" id="stChip">${t.status==='running'?'En curso':t.status==='paused'?'En pausa':'Listo'}</span></div>
-    <div class="ring"><svg viewBox="0 0 220 220"><defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7B09C"/><stop offset=".55" stop-color="#E8745A"/><stop offset="1" stop-color="#D9583A"/></linearGradient></defs>
+  const bm=breakMin(t.dur);
+  return `<div class="solo"><section class="timer ${brk?'brk':''} ${t.status==='running'?'live':t.status==='paused'?'paused':''}">
+    <div class="head"><span class="lbl">${brk?'Tiempo de pausa':'Tiempo de enfoque'}</span><span class="chip" id="stChip">${t.status==='running'?'En curso':t.status==='paused'?'En pausa':'Listo'}</span></div>
+    <div class="ring"><svg viewBox="0 0 220 220"><defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7B09C"/><stop offset=".55" stop-color="#E8745A"/><stop offset="1" stop-color="#D9583A"/></linearGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9BEBD0"/><stop offset=".55" stop-color="#4CC9A0"/><stop offset="1" stop-color="#2FA87F"/></linearGradient></defs>
       <g id="tks">${Array.from({length:60},(_,i)=>{const a=i*6*Math.PI/180,L=i%5===0,r1=L?101:103,r2=L?109:107;return `<line class="tk" x1="${(110+r1*Math.cos(a)).toFixed(2)}" y1="${(110+r1*Math.sin(a)).toFixed(2)}" x2="${(110+r2*Math.cos(a)).toFixed(2)}" y2="${(110+r2*Math.sin(a)).toFixed(2)}" stroke-width="${L?2.4:1.4}"/>`}).join('')}</g>
       <circle class="tr" cx="110" cy="110" r="94" fill="none" stroke-width="5"/><circle class="pg" id="pg" cx="110" cy="110" r="94" fill="none" stroke-width="5" stroke-dasharray="590.62" stroke-dashoffset="0"/>
       <g id="kn"><circle class="kn" cx="204" cy="110" r="4.5"/></g></svg>
-      <div class="in"><div class="cat"><i class="dot" style="background:#E8745A"></i><span id="catLbl">${c.name}</span></div><div class="clock" id="clock">25:00</div><div class="csub" id="csub"></div></div></div>
-    ${running?`<div class="tname">${esc(t.title||c.name)}</div><div class="tsub">Sesión de ${Math.round(t.dur/60)} minutos</div>`:`<div class="durs">${[15,25,45,60].map(m=>`<button data-dur="${m}" class="${t.dur===m*60?'on':''}">${m} min</button>`).join('')}</div><div style="height:14px"></div>`}
+      <div class="in"><div class="cat"><i class="dot" style="background:${brk?'#4CC9A0':'#E8745A'}"></i><span id="catLbl">${brk?'Pausa':c.name}</span></div><div class="clock" id="clock">25:00</div><div class="csub" id="csub"></div></div></div>
+    ${brk?`<div class="tname">Descansa</div><div class="tsub">Respira, estírate y toma agua</div>`
+      :running?`<div class="tname">${esc(t.title||c.name)}</div><div class="tsub">Sesión de ${Math.round(t.dur/60)} minutos</div>`
+      :`${t.pendingBreak?`<button class="btn brkbtn" data-act="startbreak">${svg('clock')}Empezar pausa de ${t.pendingBreak} min</button>`:''}<div class="durs">${[15,25,45,60].map(m=>`<button data-dur="${m}" class="${t.dur===m*60?'on':''}">${m} min</button>`).join('')}</div><div class="bhint" style="margin-top:10px">Pausa al terminar: ${bm} min · ${S.prefs.autoBreak?'automática':'manual'}</div>`}
     <div class="tfields">
-      ${running?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
+      ${running||brk?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
       <select class="dk" id="tCat">${CATS.map(x=>`<option value="${x.id}" ${x.id===t.cat?'selected':''}>${x.name}</option>`).join('')}</select>`}
-      <input class="dk" id="tNote" placeholder="Una nota sobre tu avance (opcional)" value="${esc(t.note)}" maxlength="300">
+      ${brk?'':`<input class="dk" id="tNote" placeholder="Una nota sobre tu avance (opcional)" value="${esc(t.note)}" maxlength="300">`}
       <div class="row">
         <button class="btn pri" data-act="toggle">${svg(t.status==='running'?'pause':'play')}${t.status==='running'?'Pausar':t.status==='paused'?'Reanudar':'Empezar'}</button>
-        <button class="btn sec" data-act="finish" ${running?'':'disabled'}>${svg('check')}Guardar</button>
+        ${brk?`<button class="btn sec" data-act="skip">${svg('check')}Saltar pausa</button>`:`<button class="btn sec" data-act="finish" ${running?'':'disabled'}>${svg('check')}Guardar</button>`}
       </div>
     </div>
   </section></div>`;
@@ -478,10 +491,24 @@ function copyText(x){
 }
 /* ---------- avisos ---------- */
 function ntfLabel(){const b=$('#ntf');if(b)b.textContent='Avisos: '+(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'?'sí':'no')}
-function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=660;g.gain.setValueAtTime(.15,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.8);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.8)}catch(e){}}
-function notifyDone(title,body){
-  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
-  beep();
+let AC;
+function ac(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function chime(kind){
+  const a=ac();if(!a)return;
+  const seqs={focus:[[523.25,0],[659.25,.17],[783.99,.34],[1046.5,.55]],rest:[[783.99,0],[1046.5,.22]]};
+  const reps=kind==='focus'?2:1,t0=a.currentTime+.05;
+  for(let r=0;r<reps;r++)seqs[kind].forEach(([f,d])=>{
+    [[f,'sine',.22],[f*2,'triangle',.05]].forEach(([fq,ty,vol])=>{
+      const o=a.createOscillator(),g=a.createGain(),st=t0+r*1.6+d;
+      o.type=ty;o.frequency.value=fq;
+      g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(vol,st+.02);g.gain.exponentialRampToValueAtTime(.0008,st+1.1);
+      o.connect(g);g.connect(a.destination);o.start(st);o.stop(st+1.15);
+    });
+  });
+}
+function notifyDone(title,body,kind='focus'){
+  try{navigator.vibrate&&navigator.vibrate(kind==='focus'?[250,120,250,120,400]:[200,100,200])}catch(e){}
+  chime(kind);
   if(!(S.prefs.notify&&'Notification' in window&&Notification.permission==='granted'))return;
   const o={body,icon:'icon.svg',tag:'tempo-done'};
   if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
@@ -499,11 +526,13 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act],[data-edit],[data-dur],[data-mode],[data-tab]');if(!t)return;
   if(t.dataset.tab&&!t.closest('#tabs')){tab=t.dataset.tab;render();window.scrollTo(0,0);return}
   if(t.dataset.edit){openSession(S.sessions.find(s=>s.id===t.dataset.edit));return}
-  if(t.dataset.dur){if(S.timer.status==='idle'){const s=+t.dataset.dur*60;S.timer.dur=s;S.timer.remaining=s;save();render()}return}
+  if(t.dataset.dur){if(S.timer.status==='idle'){const s=+t.dataset.dur*60;S.timer.dur=s;S.timer.remaining=s;S.timer.pendingBreak=0;save();render()}return}
   if(t.dataset.mode){statMode=t.dataset.mode;render();return}
   if(t.dataset.act==='copysum'){copyText(summaryText(summaryData()));return}
   if(t.dataset.act==='goals')openGoals();
-  if(t.dataset.act==='toggle')toggle();
+  if(t.dataset.act==='toggle'){ac();toggle()}
+  if(t.dataset.act==='startbreak'){ac();startBreak(S.timer.pendingBreak)}
+  if(t.dataset.act==='skip')skipBreak();
   if(t.dataset.act==='finish')finish(true);
 });
 document.addEventListener('input',e=>{
@@ -532,12 +561,12 @@ function tick(){
   if(lit!==lastLit){lastLit=lit;document.querySelectorAll('#tks .tk').forEach((l,i)=>l.classList.toggle('lit',i<lit))}
   const cs=$('#csub');if(cs)cs.textContent=t.status==='running'?'Termina a las '+new Date(t.endAt).toLocaleTimeString('es-DO',{hour:'numeric',minute:'2-digit'}):t.status==='paused'?'En pausa':'Listo para empezar';
   const tm=document.querySelector('.timer');if(tm)tm.classList.toggle('live',t.status==='running');
-  document.title=t.status==='idle'?'Tempo · Tu tiempo, con intención':`${$('#clock').textContent} · Tempo`;
+  document.title=t.status==='idle'?'Tempo · Tu tiempo, con intención':`${$('#clock').textContent} · ${t.mode==='break'?'Pausa':'Tempo'}`;
 }
 function toggle(){
   const t=S.timer;
   if(t.status==='running'){t.remaining=remaining();t.status='paused'}
-  else{if(t.status==='idle'){t.title=t.title||'';}t.endAt=Date.now()+t.remaining*1000;t.status='running'}
+  else{if(t.status==='idle'){t.title=t.title||'';t.pendingBreak=0}t.endAt=Date.now()+t.remaining*1000;t.status='running'}
   save();render();
 }
 function record(min,note){
@@ -545,11 +574,25 @@ function record(min,note){
   const s={id:'s'+Date.now().toString(36),title:t.title.trim()||c.name,cat:t.cat,min,start:new Date().toISOString(),conc:0,note:(note??t.note).trim()};
   S.sessions.push(s);return s;
 }
-function reset(){const k=S.timer;S.timer={...idle(),cat:k.cat,dur:k.dur,remaining:k.dur}}
+function focusDur(){const k=S.timer;return k.mode==='break'?(k.focusDur||1500):k.dur}
+function reset(){const k=S.timer,d=focusDur();S.timer={...idle(),cat:k.cat,dur:d,remaining:d}}
+function startBreak(min){
+  const k=S.timer,fd=focusDur(),sec=min*60;
+  S.timer={...idle(),cat:k.cat,mode:'break',focusDur:fd,dur:sec,remaining:sec,endAt:Date.now()+sec*1000,status:'running'};
+  save();render();
+}
+function skipBreak(){reset();save();render()}
 function complete(){
-  const t=S.timer,s=record(Math.round(t.dur/60));
-  notifyDone('Sesión completada','Has enfocado '+Math.round(t.dur/60)+' min en '+(s.title||'tu tarea')+'. Guarda una nota.');
-  reset();save();render();openSession(s,true);
+  const t=S.timer;
+  if(t.mode==='break'){
+    notifyDone('Pausa terminada','Listo para otra sesión de enfoque.','rest');
+    reset();save();render();return;
+  }
+  const s=record(Math.round(t.dur/60)),bm=breakMin(t.dur);
+  notifyDone('Sesión completada','Has enfocado '+Math.round(t.dur/60)+' min en '+(s.title||'tu tarea')+'. Toca descansar '+bm+' min.','focus');
+  reset();
+  if(S.prefs.autoBreak)startBreak(bm);else S.timer.pendingBreak=bm;
+  save();render();openSession(s,true);
 }
 function finish(manual){
   const t=S.timer,done=Math.floor((t.dur-remaining())/60);
@@ -602,6 +645,9 @@ function openGoals(){
 }
 
 /* ---------- backup ---------- */
+function abkLabel(){const b=$('#abk');if(b)b.textContent='Pausa automática: '+(S.prefs.autoBreak?'sí':'no')}
+$('#abk').onclick=()=>{S.prefs.autoBreak=!S.prefs.autoBreak;save();abkLabel();toast(S.prefs.autoBreak?'La pausa empezará sola':'La pausa la inicias tú');if(tab==='enfoque')render()};
+$('#snd').onclick=()=>{ac();chime('focus');toast('Así suena al terminar')};
 $('#ntf').onclick=async()=>{
   if(!('Notification' in window)){toast('Este navegador no soporta avisos.');return}
   if(S.prefs.notify){S.prefs.notify=false;save();ntfLabel();toast('Avisos desactivados');return}
@@ -630,9 +676,9 @@ $('#file').onchange=async e=>{
 /* ---------- boot ---------- */
 (function boot(){
   const t=S.timer;
-  if(t.status==='running'&&t.endAt<=Date.now()){const s=record(Math.round(t.dur/60));reset();save();render();openSession(s,true)}
+  if(t.status==='running'&&t.endAt<=Date.now()){if(t.mode==='break'){reset();save();render()}else{const s=record(Math.round(t.dur/60));reset();S.timer.pendingBreak=breakMin(t.dur);save();render();openSession(s,true)}}
   else render();
-  save();ntfLabel();
+  save();ntfLabel();abkLabel();
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
