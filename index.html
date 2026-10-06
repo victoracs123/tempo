@@ -33,8 +33,9 @@ header.top .wrap{display:flex;align-items:center;justify-content:space-between;h
 h1{margin:8px 0 0;font-size:38px;letter-spacing:-.04em;line-height:1.1}
 .today{color:var(--muted);font-size:14px;display:flex;align-items:center;gap:8px}
 .tabs{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin:22px 0 24px;gap:12px}
-.tabs nav{display:flex;gap:6px;overflow-x:auto}
-.tab{display:flex;align-items:center;gap:8px;padding:14px 12px;color:var(--muted);font-size:15px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .2s}
+.tabs nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.tabs nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:8px;padding:14px 10px;color:var(--muted);font-size:15px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .2s}
 .tab svg{width:18px;height:18px}
 .tab.on{color:var(--accent);border-color:var(--accent)}
 .ghost{display:flex;align-items:center;gap:8px;font-weight:700;color:#4B545E;padding:10px 4px;white-space:nowrap}
@@ -186,6 +187,7 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 .conc-opts label:has(input:checked){border-color:var(--accent);background:#FDF1ED;color:var(--accent)}
 .hint2{font-size:13px;color:var(--muted);margin-top:8px}
 .goalrow{display:grid;grid-template-columns:1fr 100px 70px;align-items:center;gap:10px;margin-top:10px}
+.rtf{display:block;width:100%;border:0;border-radius:var(--r);background:#C5CCC0}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1B2128;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:30;animation:pop .2s var(--ease)}
 .sumhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .delta{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
@@ -249,6 +251,7 @@ footer .acts{display:flex;gap:16px}footer button{color:#6A737D;text-decoration:u
 <input type="file" id="file" accept="application/json" hidden>
 <div id="modalRoot"></div>
 
+<script src="projects.js"></script>
 <script>
 'use strict';
 const CATS=[
@@ -272,7 +275,12 @@ function load(){
   try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.sessions))return Object.assign({goals:{...DEF_GOALS},timer:idle()},r)}catch(e){}
   return {sessions:SEED.map(x=>({...x})),goals:{...DEF_GOALS},timer:idle()};
 }
-function idle(){return {status:'idle',mode:'focus',pendingBreak:0,dur:1500,remaining:1500,endAt:0,title:'',cat:'aleman',note:''}}
+function idle(){return {status:'idle',mode:'focus',pendingBreak:0,dur:1500,remaining:1500,endAt:0,title:'',cat:'aleman',proj:'',note:''}}
+const PJ=Object.fromEntries(RT_PROJECTS.map(p=>[p.id,p]));
+const todayIdx=()=>(new Date().getDay()+6)%7;
+function rtDay(id){try{const r=JSON.parse(localStorage.getItem('ritmo.v1'));if(r&&r.sched&&id in r.sched)return r.sched[id]}catch(e){}return PJ[id].day}
+function rtTodayId(){const d=todayIdx();return (RT_PROJECTS.find(p=>rtDay(p.id)===d)||RT_PROJECTS[0]).id}
+function projSelect(id,sel,cls){const d=todayIdx();return `<select id="${id}" class="${cls}" aria-label="Proyecto">${RT_PROJECTS.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${rtDay(p.id)===d?'Hoy · ':''}${esc(p.name)}</option>`).join('')}</select>`}
 const BREAKS={15:3,25:5,45:10,60:15};
 const breakMin=sec=>BREAKS[Math.round(sec/60)]||Math.max(1,Math.round(sec/60/5));
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -317,7 +325,7 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 
 /* ---------- state / tabs ---------- */
 let tab='enfoque',fCat='',fText='',statMode='total';
-const TABS=[['enfoque','Enfoque','clock'],['historial','Historial','hist'],['stats','Estadísticas','bars'],['resumen','Resumen','spark']];
+const TABS=[['enfoque','Enfoque','clock'],['historial','Historial','hist'],['stats','Estadísticas','bars'],['resumen','Resumen','spark'],['ritmo','Ritmo','target']];
 function renderChrome(){
   $('#tabs').innerHTML=TABS.map(([id,l,ic])=>`<button class="tab ${tab===id?'on':''}" data-tab="${id}">${svg(ic)}${l}</button>`).join('');
   $('#addBtn').innerHTML=svg('plus')+'Añadir sesión';
@@ -357,7 +365,7 @@ function sessRow(s,edit=true){
   const c=cat(s.cat);
   const dots=s.conc?`<div class="cdots">${svg('brain','width="15" height="15"')}<span>${[1,2,3,4,5].map(n=>`<i class="${n<=s.conc?'on':''}"></i>`).join('')}</span>Concentración ${s.conc}/5</div>`:'';
   return `<div class="sess" style="--cc:${c.color}"><div class="ico" style="background:${c.bg};color:${c.color}">${svg('book')}</div>
-  <div class="mid"><div class="tt">${esc(s.title||c.name)}</div><div class="meta"><span class="cchip" style="background:${c.bg};color:${c.color}">${c.name}</span><span>${dateStr(s.start)}</span></div></div>
+  <div class="mid"><div class="tt">${esc(s.title||c.name)}</div><div class="meta"><span class="cchip" style="background:${c.bg};color:${c.color}">${c.name}</span>${s.proj&&PJ[s.proj]?`<span class="cchip" style="background:var(--soft);color:#4B545E">${esc(PJ[s.proj].name)}</span>`:''}<span>${dateStr(s.start)}</span></div></div>
   <div class="r"><span class="dur">${s.min} min</span>${edit?`<button data-edit="${s.id}" aria-label="Editar">${svg('pen')}</button>`:''}</div>
   ${dots||s.note?`<div class="sbot">${dots}${s.note?`<div class="note">${esc(s.note)}</div>`:''}</div>`:''}</div>`;
 }
@@ -387,7 +395,8 @@ function vEnfoque(){
       :`${t.pendingBreak?`<button class="btn brkbtn" data-act="startbreak">${svg('clock')}Empezar pausa de ${t.pendingBreak} min</button>`:''}<div class="durs">${[15,25,45,60].map(m=>`<button data-dur="${m}" class="${t.dur===m*60?'on':''}">${m} min</button>`).join('')}</div><div class="bhint" style="margin-top:10px">Pausa al terminar: ${bm} min · ${S.prefs.autoBreak?'automática':'manual'}</div>`}
     <div class="tfields">
       ${running||brk?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
-      <select class="dk" id="tCat">${CATS.map(x=>`<option value="${x.id}" ${x.id===t.cat?'selected':''}>${x.name}</option>`).join('')}</select>`}
+      <select class="dk" id="tCat">${CATS.map(x=>`<option value="${x.id}" ${x.id===t.cat?'selected':''}>${x.name}</option>`).join('')}</select>
+      ${t.cat==='programacion'?projSelect('tProj',t.proj||rtTodayId(),'dk'):''}`}
       ${brk?'':`<input class="dk" id="tNote" placeholder="Una nota sobre tu avance (opcional)" value="${esc(t.note)}" maxlength="300">`}
       <div class="row">
         <button class="btn pri" data-act="toggle">${svg(t.status==='running'?'pause':'play')}${t.status==='running'?'Pausar':t.status==='paused'?'Reanudar':'Empezar'}</button>
@@ -396,6 +405,13 @@ function vEnfoque(){
     </div>
   </section></div>`;
 }
+let rtH=1500;
+function vRitmo(){return `<iframe id="rtf" class="rtf" src="ritmo.html" title="Ritmo semanal" style="height:${rtH}px"></iframe>`}
+window.addEventListener('message',e=>{
+  const f=$('#rtf');if(!f||e.source!==f.contentWindow||!e.data||!e.data.tempo)return;
+  if(e.data.tempo==='height'){rtH=Math.ceil(e.data.h);f.style.height=rtH+'px'}
+  else if(e.data.tempo==='tab'){tab=e.data.tab;render();window.scrollTo(0,0)}
+});
 function vHistorial(){
   const q=fText.toLowerCase();
   const l=sorted().filter(s=>(!fCat||s.cat===fCat)&&(!q||(s.title+' '+s.note).toLowerCase().includes(q)));
@@ -405,6 +421,29 @@ function vHistorial(){
   <select class="sel" id="fCat"><option value="">Todas las categorías</option>${CATS.map(c=>`<option value="${c.id}" ${fCat===c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>
   <div class="slist" style="margin-top:14px">${l.map(s=>sessRow(s)).join('')||'<div class="empty">Nada que coincida.</div>'}</div></div>`;
 }
+function rtWeekData(){
+  let r={};try{r=JSON.parse(localStorage.getItem('ritmo.v1'))||{}}catch(e){}
+  const caps=(Array.isArray(r.caps)&&r.caps.length===7?r.caps:[3,3,3,3,3,2,0]).map(h=>(+h||0)*60);
+  const log=r.log||{},life=r.life||{},ws=weekStart();
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(ws);d.setDate(d.getDate()+i);return dkey(d)});
+  const proj=Object.fromEntries(RT_PROJECTS.map(p=>[p.id,0]));
+  days.forEach(k=>Object.entries(log[k]||{}).forEach(([id,m])=>{if(id in proj)proj[id]+=m}));
+  S.sessions.filter(inWeek).forEach(s=>{if(s.proj&&s.proj in proj)proj[s.proj]+=s.min});
+  const auto=(k,id)=>S.sessions.some(s=>dkey(pd(s.start))===k&&(id==='leer'?s.cat==='lectura':id==='estudiar'?(s.cat==='aleman'||s.cat==='medicina'):false));
+  const lifeN=id=>days.filter(k=>(life[k]||{})[id]||auto(k,id)).length;
+  return {budget:caps.reduce((a,b)=>a+b,0),code:Object.values(proj).reduce((a,b)=>a+b,0),proj,lifeN};
+}
+function codeCard(){
+  const w=rtWeekData(),pct=w.budget?Math.round(w.code/w.budget*100):0,col=cat('programacion').color;
+  const act=RT_PROJECTS.map(p=>({p,m:w.proj[p.id]})).filter(x=>x.m>0).sort((a,b)=>b.m-a.m),max=act.length?act[0].m:1;
+  const idle=RT_PROJECTS.filter(p=>!w.proj[p.id]).map(p=>p.name);
+  const ins=!w.code?'Semana sin código todavía.':pct>105?'Te pasaste del cupo. Baja un poco la próxima.':pct<60?'Vas corto de cupo. Hay margen.':'Buen ritmo. Mantén los topes.';
+  const rows=act.map(({p,m})=>`<div class="goal"><div class="t">${esc(p.name)}<span>${fmt(m)}</span></div><div class="track"><i style="width:${Math.round(m/max*100)}%;background:${col}"></i></div></div>`).join('');
+  return `<div class="card"><div class="ghead"><div class="tt">${svg('clock')}<div><h3>Código esta semana</h3><div class="sub">${rangeWeek()} · ${fmt(w.code)} de ${fmt(w.budget)} (${pct}%)</div></div></div></div>
+  <div class="goals">${rows||'<div class="empty">Aún no hay horas de código. En Enfoque elige Programación y un proyecto.</div>'}</div>
+  <div class="goalsfoot"><span>${ins}</span><span>Leer ${w.lifeN('leer')}/7 · Estudiar ${w.lifeN('estudiar')}/7 · Hermanos ${w.lifeN('hermanos')}/7</span></div>
+  ${idle.length&&w.code?`<div class="goalsfoot" style="margin-top:14px;padding-top:14px"><span>Sin tocar: ${idle.map(esc).join(', ')}</span></div>`:''}</div>`;
+}
 function vStats(){
   const all=S.sessions,conc=all.filter(s=>s.conc),avg=conc.length?(conc.reduce((a,s)=>a+s.conc,0)/conc.length).toFixed(1):'—';
   const list=statMode==='total'?all:all.filter(inWeek);
@@ -412,6 +451,7 @@ function vStats(){
   return `<div class="cards4">${k('clock',fmt(total(all)),'Tiempo total')}${k('check',all.length,'Sesiones guardadas')}${k('flame',streak()+(streak()===1?' día':' días'),'Racha actual')}${k('brain',avg+'/5','Concentración · '+conc.length+' valoradas')}</div>
   <div class="grid2"><div class="card"><h3>Enfoque esta semana</h3>${weekChart()}</div>
   <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Tu tiempo por categoría</h3><div class="seg"><button data-mode="total" class="${statMode==='total'?'on':''}">Total</button><button data-mode="semana" class="${statMode==='semana'?'on':''}">Semana</button></div></div>${catBars(list)}</div></div>
+  <div style="margin-top:24px">${codeCard()}</div>
   <div style="margin-top:24px">${goalsCard()}</div>`;
 }
 function rangeSessions(off){
@@ -517,7 +557,7 @@ function notifyDone(title,body,kind='focus'){
 function render(){
   lastLit=-1;renderChrome();
   const v=$('#view');
-  v.innerHTML=tab==='enfoque'?vEnfoque():tab==='historial'?vHistorial():tab==='resumen'?vResumen():vStats();
+  v.innerHTML=tab==='enfoque'?vEnfoque():tab==='historial'?vHistorial():tab==='resumen'?vResumen():tab==='ritmo'?vRitmo():vStats();
   tick();
 }
 
@@ -542,7 +582,8 @@ document.addEventListener('input',e=>{
   save();
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='tCat'){S.timer.cat=e.target.value;save();$('#catLbl').textContent=cat(S.timer.cat).name}
+  if(e.target.id==='tCat'){S.timer.cat=e.target.value;save();render()}
+  if(e.target.id==='tProj'){S.timer.proj=e.target.value;save()}
   if(e.target.id==='fCat'){fCat=e.target.value;render()}
 });
 
@@ -571,11 +612,11 @@ function toggle(){
 }
 function record(min,note){
   const t=S.timer,c=cat(t.cat);
-  const s={id:'s'+Date.now().toString(36),title:t.title.trim()||c.name,cat:t.cat,min,start:new Date().toISOString(),conc:0,note:(note??t.note).trim()};
+  const s={id:'s'+Date.now().toString(36),title:t.title.trim()||c.name,cat:t.cat,min,start:new Date().toISOString(),conc:0,proj:t.cat==='programacion'?(t.proj||rtTodayId()):'',note:(note??t.note).trim()};
   S.sessions.push(s);return s;
 }
 function focusDur(){const k=S.timer;return k.mode==='break'?(k.focusDur||1500):k.dur}
-function reset(){const k=S.timer,d=focusDur();S.timer={...idle(),cat:k.cat,dur:d,remaining:d}}
+function reset(){const k=S.timer,d=focusDur();S.timer={...idle(),cat:k.cat,proj:k.proj,dur:d,remaining:d}}
 function startBreak(min){
   const k=S.timer,fd=focusDur(),sec=min*60;
   S.timer={...idle(),cat:k.cat,mode:'break',focusDur:fd,dur:sec,remaining:sec,endAt:Date.now()+sec*1000,status:'running'};
@@ -618,6 +659,7 @@ function openSession(s,justSaved=false){
   <div class="sub">${justSaved?'Tu tiempo ya está registrado. Puedes añadir una nota y valorar tu concentración.':isNew?'Registra una sesión que hiciste fuera del temporizador.':'Corrige los datos de esta sesión.'}</div>
   <label>¿En qué trabajaste?</label><input class="in" id="mTitle" value="${esc(s?.title||'')}" maxlength="80">
   <label>Categoría</label><select class="in" id="mCat">${CATS.map(c=>`<option value="${c.id}" ${(s?.cat||'aleman')===c.id?'selected':''}>${c.name}</option>`).join('')}</select>
+  <div id="mProjWrap" style="display:${(s?.cat||'aleman')==='programacion'?'block':'none'}"><label>Proyecto</label>${projSelect('mProj',s?.proj||rtTodayId(),'in')}</div>
   <div class="two"><div><label>Minutos</label><input class="in" id="mMin" type="number" min="1" max="600" value="${s?.min||25}"></div>
   <div><label>Fecha</label><input class="in" id="mDate" type="date" value="${dkey(d)}"></div></div>
   <label>Concentración (opcional)</label><div class="conc-opts">${[1,2,3,4,5].map(n=>`<label><input type="radio" name="mc" value="${n}" ${s?.conc===n?'checked':''}>${n}</label>`).join('')}<label><input type="radio" name="mc" value="0" ${!s?.conc?'checked':''}>Sin valorar</label></div>
@@ -625,12 +667,13 @@ function openSession(s,justSaved=false){
   <label>Nota (opcional)</label><textarea class="in" id="mNote" rows="3" maxlength="400">${esc(s?.note||'')}</textarea>
   <div class="mfoot"><button class="btn pri" id="mSave">${svg('check')}Guardar cambios</button>${!isNew?'<button class="danger" id="mDel">Eliminar</button>':''}</div>`);
   $('#mx').onclick=closeModal;
+  $('#mCat').onchange=()=>{$('#mProjWrap').style.display=$('#mCat').value==='programacion'?'block':'none'};
   $('#mSave').onclick=()=>{
     const min=Math.max(1,Math.min(600,parseInt($('#mMin').value)||0));
     if(!parseInt($('#mMin').value)){toast('Indica los minutos.');return}
     const ds=$('#mDate').value||dkey(d);const [y,mo,da]=ds.split('-').map(Number);
     const base=new Date(d);base.setFullYear(y,mo-1,da);
-    const data={title:$('#mTitle').value.trim()||cat($('#mCat').value).name,cat:$('#mCat').value,min,start:(isNew&&ds===dkey(new Date())?new Date():isNew?new Date(y,mo-1,da,12,0):base).toISOString(),conc:+document.querySelector('input[name=mc]:checked').value,note:$('#mNote').value.trim()};
+    const data={title:$('#mTitle').value.trim()||cat($('#mCat').value).name,cat:$('#mCat').value,min,start:(isNew&&ds===dkey(new Date())?new Date():isNew?new Date(y,mo-1,da,12,0):base).toISOString(),conc:+document.querySelector('input[name=mc]:checked').value,proj:$('#mCat').value==='programacion'?$('#mProj').value:'',note:$('#mNote').value.trim()};
     if(isNew)S.sessions.push({id:'s'+Date.now().toString(36),...data});else Object.assign(s,data,{start:ds===dkey(d)?s.start:data.start});
     save();closeModal();render();toast('Sesión guardada');
   };
