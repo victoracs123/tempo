@@ -259,20 +259,35 @@ const CATS=[
  {id:'lectura',name:'Lectura',color:'#3F8F76',bg:'#E6F4EF'},
  {id:'medicina',name:'Medicina',color:'#4A78C2',bg:'#E7EEF9'},
  {id:'programacion',name:'Programación',color:'#8A63C9',bg:'#F0EAFA'},
- {id:'trabajo',name:'Trabajo',color:'#C79A2B',bg:'#FAF2DC'},
+ {id:'proyectos',name:'Proyectos',color:'#2E8B8B',bg:'#E3F3F3'},
  {id:'otros',name:'Otros',color:'#7C838C',bg:'#EEF0F2'}
 ];
 const cat=id=>CATS.find(c=>c.id===id)||CATS[5];
-const DEF_GOALS={aleman:600,lectura:210,medicina:180,programacion:240,trabajo:300};
+const DEF_GOALS={aleman:600,lectura:210,medicina:180,programacion:240,proyectos:1020};
 const SEED=[
  {id:'s1',title:'Anki - Cards',cat:'aleman',min:25,start:'2026-09-29T16:03:00',conc:3,note:'Avancé FSP Deck y repasé B1 Deck'},
  {id:'s2',title:'The Brothers Karamazov',cat:'lectura',min:25,start:'2026-09-29T17:14:00',conc:3,note:'Difícil seguir porque estaba haciendo a la misma vez el proyecto de Dmitri con ChatGPT-6.1 Sol'},
  {id:'s3',title:'FSP',cat:'aleman',min:25,start:'2026-10-05T12:00:00',conc:3,note:'Decir en voz alta todo el FSP- Anamnese hasta l aparte'}
 ];
 const KEY='tempo.v3';
-let S=load();S.prefs=Object.assign({notify:false,autoBreak:true},S.prefs);
+let S=load();S.prefs=Object.assign({notify:false,autoBreak:true},S.prefs);save();
+/* Trabajo pasó a ser Proyectos. Las sesiones con título de proyecto o con proj pasan a Proyectos y quedan ligadas al proyecto. */
+function migrate(r){
+  let ch=false;
+  (r.sessions||[]).forEach(x=>{
+    if(x.cat==='trabajo'||(x.cat==='programacion'&&x.proj)){x.cat='proyectos';ch=true}
+    if(x.cat==='proyectos'&&!x.proj){
+      const t=String(x.title||'').toLowerCase().trim();
+      const m=RT_PROJECTS.find(p=>t&&(t===p.name.toLowerCase()||t.includes(p.name.toLowerCase().replace(/ \(.*\)$/,''))));
+      if(m){x.proj=m.id;ch=true}
+    }
+  });
+  if(r.goals&&'trabajo' in r.goals){r.goals.proyectos=r.goals.trabajo===300?1020:r.goals.trabajo;delete r.goals.trabajo;ch=true}
+  if(r.timer&&r.timer.cat==='trabajo'){r.timer.cat='proyectos';ch=true}
+  return ch;
+}
 function load(){
-  try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.sessions))return Object.assign({goals:{...DEF_GOALS},timer:idle()},r)}catch(e){}
+  try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.sessions)){migrate(r);return Object.assign({goals:{...DEF_GOALS},timer:idle()},r)}}catch(e){}
   return {sessions:SEED.map(x=>({...x})),goals:{...DEF_GOALS},timer:idle()};
 }
 function idle(){return {status:'idle',mode:'focus',pendingBreak:0,dur:1500,remaining:1500,endAt:0,title:'',cat:'aleman',proj:'',note:''}}
@@ -280,7 +295,7 @@ const PJ=Object.fromEntries(RT_PROJECTS.map(p=>[p.id,p]));
 const todayIdx=()=>(new Date().getDay()+6)%7;
 function rtDay(id){try{const r=JSON.parse(localStorage.getItem('ritmo.v1'));if(r&&r.sched&&id in r.sched)return r.sched[id]}catch(e){}return PJ[id].day}
 function rtTodayId(){const d=todayIdx();return (RT_PROJECTS.find(p=>rtDay(p.id)===d)||RT_PROJECTS[0]).id}
-function projSelect(id,sel,cls){const d=todayIdx();return `<select id="${id}" class="${cls}" aria-label="Proyecto">${RT_PROJECTS.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${rtDay(p.id)===d?'Hoy · ':''}${esc(p.name)}</option>`).join('')}</select>`}
+function projSelect(id,sel,cls){const d=todayIdx();return `<select id="${id}" class="${cls}" aria-label="Proyecto">${[...RT_PROJECTS].sort((a,b)=>(rtDay(a.id)===d?0:1)-(rtDay(b.id)===d?0:1)).map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${rtDay(p.id)===d?'Hoy · ':''}${esc(p.name)}</option>`).join('')}</select>`}
 const BREAKS={15:3,25:5,45:10,60:15};
 const breakMin=sec=>BREAKS[Math.round(sec/60)]||Math.max(1,Math.round(sec/60/5));
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -396,7 +411,7 @@ function vEnfoque(){
     <div class="tfields">
       ${running||brk?'':`<input class="dk" id="tTitle" placeholder="¿En qué vas a trabajar?" value="${esc(t.title)}" maxlength="80">
       <select class="dk" id="tCat">${CATS.map(x=>`<option value="${x.id}" ${x.id===t.cat?'selected':''}>${x.name}</option>`).join('')}</select>
-      ${t.cat==='programacion'?projSelect('tProj',t.proj||rtTodayId(),'dk'):''}`}
+      ${t.cat==='proyectos'?projSelect('tProj',t.proj||rtTodayId(),'dk'):''}`}
       ${brk?'':`<input class="dk" id="tNote" placeholder="Una nota sobre tu avance (opcional)" value="${esc(t.note)}" maxlength="300">`}
       <div class="row">
         <button class="btn pri" data-act="toggle">${svg(t.status==='running'?'pause':'play')}${t.status==='running'?'Pausar':t.status==='paused'?'Reanudar':'Empezar'}</button>
@@ -434,7 +449,7 @@ function rtWeekData(){
   return {budget:caps.reduce((a,b)=>a+b,0),code:Object.values(proj).reduce((a,b)=>a+b,0),proj,lifeN};
 }
 function codeCard(){
-  const w=rtWeekData(),pct=w.budget?Math.round(w.code/w.budget*100):0,col=cat('programacion').color;
+  const w=rtWeekData(),pct=w.budget?Math.round(w.code/w.budget*100):0,col=cat('proyectos').color;
   const act=RT_PROJECTS.map(p=>({p,m:w.proj[p.id]})).filter(x=>x.m>0).sort((a,b)=>b.m-a.m),max=act.length?act[0].m:1;
   const idle=RT_PROJECTS.filter(p=>!w.proj[p.id]).map(p=>p.name);
   const ins=!w.code?'Semana sin código todavía.':pct>105?'Te pasaste del cupo. Baja un poco la próxima.':pct<60?'Vas corto de cupo. Hay margen.':'Buen ritmo. Mantén los topes.';
@@ -612,7 +627,7 @@ function toggle(){
 }
 function record(min,note){
   const t=S.timer,c=cat(t.cat);
-  const s={id:'s'+Date.now().toString(36),title:t.title.trim()||c.name,cat:t.cat,min,start:new Date().toISOString(),conc:0,proj:t.cat==='programacion'?(t.proj||rtTodayId()):'',note:(note??t.note).trim()};
+  const s={id:'s'+Date.now().toString(36),title:t.title.trim()||(t.cat==='proyectos'?PJ[t.proj||rtTodayId()].name:c.name),cat:t.cat,min,start:new Date().toISOString(),conc:0,proj:t.cat==='proyectos'?(t.proj||rtTodayId()):'',note:(note??t.note).trim()};
   S.sessions.push(s);return s;
 }
 function focusDur(){const k=S.timer;return k.mode==='break'?(k.focusDur||1500):k.dur}
@@ -659,7 +674,7 @@ function openSession(s,justSaved=false){
   <div class="sub">${justSaved?'Tu tiempo ya está registrado. Puedes añadir una nota y valorar tu concentración.':isNew?'Registra una sesión que hiciste fuera del temporizador.':'Corrige los datos de esta sesión.'}</div>
   <label>¿En qué trabajaste?</label><input class="in" id="mTitle" value="${esc(s?.title||'')}" maxlength="80">
   <label>Categoría</label><select class="in" id="mCat">${CATS.map(c=>`<option value="${c.id}" ${(s?.cat||'aleman')===c.id?'selected':''}>${c.name}</option>`).join('')}</select>
-  <div id="mProjWrap" style="display:${(s?.cat||'aleman')==='programacion'?'block':'none'}"><label>Proyecto</label>${projSelect('mProj',s?.proj||rtTodayId(),'in')}</div>
+  <div id="mProjWrap" style="display:${(s?.cat||'aleman')==='proyectos'?'block':'none'}"><label>Proyecto</label>${projSelect('mProj',s?.proj||rtTodayId(),'in')}</div>
   <div class="two"><div><label>Minutos</label><input class="in" id="mMin" type="number" min="1" max="600" value="${s?.min||25}"></div>
   <div><label>Fecha</label><input class="in" id="mDate" type="date" value="${dkey(d)}"></div></div>
   <label>Concentración (opcional)</label><div class="conc-opts">${[1,2,3,4,5].map(n=>`<label><input type="radio" name="mc" value="${n}" ${s?.conc===n?'checked':''}>${n}</label>`).join('')}<label><input type="radio" name="mc" value="0" ${!s?.conc?'checked':''}>Sin valorar</label></div>
@@ -667,13 +682,13 @@ function openSession(s,justSaved=false){
   <label>Nota (opcional)</label><textarea class="in" id="mNote" rows="3" maxlength="400">${esc(s?.note||'')}</textarea>
   <div class="mfoot"><button class="btn pri" id="mSave">${svg('check')}Guardar cambios</button>${!isNew?'<button class="danger" id="mDel">Eliminar</button>':''}</div>`);
   $('#mx').onclick=closeModal;
-  $('#mCat').onchange=()=>{$('#mProjWrap').style.display=$('#mCat').value==='programacion'?'block':'none'};
+  $('#mCat').onchange=()=>{$('#mProjWrap').style.display=$('#mCat').value==='proyectos'?'block':'none'};
   $('#mSave').onclick=()=>{
     const min=Math.max(1,Math.min(600,parseInt($('#mMin').value)||0));
     if(!parseInt($('#mMin').value)){toast('Indica los minutos.');return}
     const ds=$('#mDate').value||dkey(d);const [y,mo,da]=ds.split('-').map(Number);
     const base=new Date(d);base.setFullYear(y,mo-1,da);
-    const data={title:$('#mTitle').value.trim()||cat($('#mCat').value).name,cat:$('#mCat').value,min,start:(isNew&&ds===dkey(new Date())?new Date():isNew?new Date(y,mo-1,da,12,0):base).toISOString(),conc:+document.querySelector('input[name=mc]:checked').value,proj:$('#mCat').value==='programacion'?$('#mProj').value:'',note:$('#mNote').value.trim()};
+    const data={title:$('#mTitle').value.trim()||cat($('#mCat').value).name,cat:$('#mCat').value,min,start:(isNew&&ds===dkey(new Date())?new Date():isNew?new Date(y,mo-1,da,12,0):base).toISOString(),conc:+document.querySelector('input[name=mc]:checked').value,proj:$('#mCat').value==='proyectos'?$('#mProj').value:'',note:$('#mNote').value.trim()};
     if(isNew)S.sessions.push({id:'s'+Date.now().toString(36),...data});else Object.assign(s,data,{start:ds===dkey(d)?s.start:data.start});
     save();closeModal();render();toast('Sesión guardada');
   };
@@ -709,8 +724,9 @@ $('#file').onchange=async e=>{
     const d=JSON.parse(await f.text());
     if(d.app!=='tempo'||!Array.isArray(d.sessions)||d.sessions.some(s=>!s||!s.start||isNaN(pd(s.start))||!(s.min>0)))throw 0;
     if(!confirm(`Esto reemplazará tus ${S.sessions.length} sesiones actuales por ${d.sessions.length}. ¿Continuar?`))return;
-    S.sessions=d.sessions.map(s=>({id:s.id||'s'+Math.random().toString(36).slice(2),title:s.title||'',cat:s.cat||'otros',min:+s.min,start:s.start,conc:+s.conc||0,note:s.note||''}));
+    S.sessions=d.sessions.map(s=>({id:s.id||'s'+Math.random().toString(36).slice(2),title:s.title||'',cat:s.cat||'otros',min:+s.min,start:s.start,conc:+s.conc||0,proj:s.proj||'',note:s.note||''}));
     if(d.goals&&typeof d.goals==='object')S.goals=d.goals;
+    migrate(S);
     save();render();toast('Datos importados');
   }catch(_){toast('Archivo no válido. No se cambió nada.')}
   e.target.value='';
