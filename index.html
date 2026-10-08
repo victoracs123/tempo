@@ -282,6 +282,9 @@ function migrate(r){
       if(m){x.proj=m.id;ch=true}
     }
   });
+  (r.sessions||[]).forEach(x=>{
+    if(/ashen\s*vow/i.test(x.title||'')){x.title='Marchward';if(!x.proj)x.proj='ash';if(x.cat!=='proyectos')x.cat='proyectos';ch=true}
+  });
   if(r.goals&&'trabajo' in r.goals){r.goals.proyectos=r.goals.trabajo===300?1020:r.goals.trabajo;delete r.goals.trabajo;ch=true}
   if(r.timer&&r.timer.cat==='trabajo'){r.timer.cat='proyectos';ch=true}
   return ch;

@@ -10,6 +10,6 @@ const RT_PROJECTS = [
   {id:"dai", name:"DailyTask", day:3, est:25},
   {id:"tem", name:"TEMPO", day:4, est:15},
   {id:"dmi", name:"Dmitri (finanzas)", day:4, est:30},
-  {id:"ash", name:"Ashen Vow (RPG)", day:5, est:60},
+  {id:"ash", name:"Marchward", day:5, est:60},
   {id:"tok", name:"Mod de tokens", day:5, est:10}
 ];
