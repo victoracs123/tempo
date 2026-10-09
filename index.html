@@ -87,6 +87,7 @@ select.dk option{color:#111}
 .btn.pri:active{transform:translateY(3px);border-bottom-width:1px}
 .btn.sec{border:1px solid rgba(255,255,255,.2);color:#fff;border-bottom:4px solid rgba(255,255,255,.12)}
 .btn.sec:active{transform:translateY(3px);border-bottom-width:1px}
+.btn.dng{width:100%;height:44px;margin-top:10px;border:1px solid rgba(255,107,107,.45);color:#FF9A9A;border-bottom:3px solid rgba(255,107,107,.25);font-size:14px}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .foot-note{font-size:13px;color:#98A1AB;text-align:center;margin-top:14px;max-width:420px}
 .durs{display:flex;gap:8px;justify-content:center;margin-top:2px}
@@ -335,6 +336,7 @@ const I={
  hist:'<path d="M4 12a8 8 0 1 0 3-6.200M4 4v4h4M12 8v4l3 2"/>',
  bars:'<path d="M5 20V10M10 20V4M15 20v-8M20 20V8"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.500 2.500M15.500 15.500L18 18M18 6l-2.500 2.500M8.500 15.500L6 18"/>'
 };
@@ -420,6 +422,7 @@ function vEnfoque(){
         <button class="btn pri" data-act="toggle">${svg(t.status==='running'?'pause':'play')}${t.status==='running'?'Pausar':t.status==='paused'?'Reanudar':'Empezar'}</button>
         ${brk?`<button class="btn sec" data-act="skip">${svg('check')}Saltar pausa</button>`:`<button class="btn sec" data-act="finish" ${running?'':'disabled'}>${svg('check')}Guardar</button>`}
       </div>
+      ${running&&!brk?`<button class="btn dng" data-act="abandon">${svg('x')}Abandonar tarea</button>`:''}
     </div>
   </section></div>`;
 }
@@ -592,6 +595,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.act==='startbreak'){ac();startBreak(S.timer.pendingBreak)}
   if(t.dataset.act==='skip')skipBreak();
   if(t.dataset.act==='finish')finish(true);
+  if(t.dataset.act==='abandon')abandon();
 });
 document.addEventListener('input',e=>{
   if(e.target.id==='tTitle')S.timer.title=e.target.value;
@@ -652,6 +656,10 @@ function complete(){
   reset();
   if(S.prefs.autoBreak)startBreak(bm);else S.timer.pendingBreak=bm;
   save();render();openSession(s,true);
+}
+function abandon(){
+  if(!confirm('¿Abandonar la tarea actual? Se descarta esta sesión y no se guarda.'))return;
+  reset();save();render();toast('Tarea abandonada.');
 }
 function finish(manual){
   const t=S.timer,done=Math.floor((t.dur-remaining())/60);
